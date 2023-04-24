@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from opentelemetry import trace
 import functools
 import re
 from typing import (
@@ -217,6 +218,8 @@ class TranslationServiceAsyncClient:
             client_info=client_info,
         )
 
+        self._tracer = trace.get_tracer(__name__)
+
     async def translate_text(
         self,
         request: Optional[Union[translation_service.TranslateTextRequest, dict]] = None,
@@ -409,13 +412,23 @@ class TranslationServiceAsyncClient:
             gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
         )
 
-        # Send the request.
-        response = await rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        with self._tracer.start_as_current_span("translate_span_1") as translate_span_1:
+            # Send the request.
+            response = await rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
+
+        with self._tracer.start_as_current_span("translate_span_2") as translate_span_2:
+            # Send the request.
+            response = await rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
         # Done; return the response.
         return response

@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 from collections import OrderedDict
+from opentelemetry import trace
 import os
 import re
 from typing import (
@@ -400,6 +401,8 @@ class TranslationServiceClient(metaclass=TranslationServiceClientMeta):
             client_options
         )
 
+        self._tracer = trace.get_tracer(__name__)
+
         api_key_value = getattr(client_options, "api_key", None)
         if api_key_value and credentials:
             raise ValueError(
@@ -637,13 +640,23 @@ class TranslationServiceClient(metaclass=TranslationServiceClientMeta):
             gapic_v1.routing_header.to_grpc_metadata((("parent", request.parent),)),
         )
 
-        # Send the request.
-        response = rpc(
-            request,
-            retry=retry,
-            timeout=timeout,
-            metadata=metadata,
-        )
+        with self._tracer.start_as_current_span("translate_span_1") as translate_span_1:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
+
+        with self._tracer.start_as_current_span("translate_span_2") as translate_span_2:
+            # Send the request.
+            response = rpc(
+                request,
+                retry=retry,
+                timeout=timeout,
+                metadata=metadata,
+            )
 
         # Done; return the response.
         return response
